@@ -108,7 +108,8 @@ export const TodoItem: React.FC<Props> = ({
 
       {tempTodo && (
         <div data-cy="Todo" className="todo">
-          <label className="todo__status-label">{/* eslint-disable-line jsx-a11y/label-has-associated-control */}
+          <label className="todo__status-label">
+            {/* eslint-disable-line jsx-a11y/label-has-associated-control */}
             <input
               data-cy="TodoStatus"
               type="checkbox"

@@ -49,8 +49,8 @@ export const App: React.FC = () => {
       completed: false,
     };
 
-    const newTodo: Todo = {
-      id: Math.max(0, ...todos.map(todo => todo.id)) + 1,
+    const newTodo: Omit<Todo, 'id'> = {
+      // id: Math.max(0, ...todos.map(todo => todo.id)) + 1,
       title: title.trim(),
       userId: clientService.USER_ID,
       completed: false,
