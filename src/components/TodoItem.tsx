@@ -4,8 +4,7 @@ import { Todo } from '../types/Todo';
 
 type Props = {
   todo: Todo;
-  isLoading: boolean;
-  tempTodo: Todo | null;
+  loadingTodoId: number | null;
   handleDeleteTodo: (id: number) => void;
   changeCompleted: (todo: Todo) => void;
   handleChangeTitle: (todo: Todo) => void;
@@ -13,8 +12,7 @@ type Props = {
 
 export const TodoItem: React.FC<Props> = ({
   todo,
-  isLoading,
-  tempTodo,
+  loadingTodoId,
   handleDeleteTodo,
   changeCompleted,
   handleChangeTitle,
@@ -29,12 +27,19 @@ export const TodoItem: React.FC<Props> = ({
 
     const trimmedQuery = query.trim();
 
-    if (trimmedQuery) {
-      handleChangeTitle({ userId, id, title: query, completed });
-    } else {
-      handleDeleteTodo(id);
+    if (trimmedQuery === title) {
+      setIsDblClicked(false);
+
+      return;
     }
 
+    if (!trimmedQuery) {
+      handleDeleteTodo(id);
+
+      return;
+    }
+
+    handleChangeTitle({ userId, id, title: trimmedQuery, completed });
     setIsDblClicked(false);
   };
 
@@ -72,7 +77,7 @@ export const TodoItem: React.FC<Props> = ({
               className="todo__title"
               onDoubleClick={() => setIsDblClicked(true)}
             >
-              {!isLoading ? title : 'Todo is being saved now'}
+              {loadingTodoId === id ? 'Todo is being saved now' : title}
             </span>
 
             <button
@@ -85,7 +90,13 @@ export const TodoItem: React.FC<Props> = ({
             </button>
           </>
         ) : (
-          <form onSubmit={handleSubmit} className="todo__edit-form">
+          <form
+            onSubmit={event => {
+              event.preventDefault();
+              handleSubmit(event);
+            }}
+            className="todo__edit-form"
+          >
             <input
               data-cy="TodoTitleField"
               type="text"
@@ -95,42 +106,20 @@ export const TodoItem: React.FC<Props> = ({
               onChange={event => setQuery(event.target.value)}
               onBlur={handleSubmit}
               onKeyDown={handleKeyDown}
-              autoFocus
             />
           </form>
         )}
 
-        <div data-cy="TodoLoader" className="modal overlay">
+        <div
+          data-cy="TodoLoader"
+          className={classNames('modal overlay', {
+            'is-active': loadingTodoId === id,
+          })}
+        >
           <div className="modal-background has-background-white-ter" />
           <div className="loader" />
         </div>
       </div>
-
-      {tempTodo && (
-        <div data-cy="Todo" className="todo">
-          <label className="todo__status-label">
-            {/* eslint-disable-line jsx-a11y/label-has-associated-control */}
-            <input
-              data-cy="TodoStatus"
-              type="checkbox"
-              className="todo__status"
-            />
-          </label>
-
-          <span data-cy="TodoTitle" className="todo__title">
-            {tempTodo.title}
-          </span>
-
-          <button type="button" className="todo__remove" data-cy="TodoDelete">
-            ×
-          </button>
-
-          <div data-cy="TodoLoader" className="modal overlay is-active">
-            <div className="modal-background has-background-white-ter" />
-            <div className="loader" />
-          </div>
-        </div>
-      )}
     </>
   );
 };

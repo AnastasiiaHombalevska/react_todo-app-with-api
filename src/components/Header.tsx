@@ -5,7 +5,7 @@ import { Todo } from '../types/Todo';
 type Props = {
   todos: Todo[];
   title: string;
-  isFocused: boolean;
+  inputRef: React.RefObject<HTMLInputElement>;
   isDisabled: boolean;
   handleToggleAll: () => void;
   handleQueryChange: (value: string) => void;
@@ -15,7 +15,7 @@ type Props = {
 export const Header: React.FC<Props> = ({
   todos,
   title,
-  isFocused,
+  inputRef,
   isDisabled,
   handleToggleAll,
   handleQueryChange,
@@ -26,7 +26,7 @@ export const Header: React.FC<Props> = ({
       <button
         type="button"
         className={classNames('todoapp__toggle-all', {
-          active: todos.every(todo => todo.completed),
+          active: todos.length > 0 && todos.every(todo => todo.completed),
         })}
         data-cy="ToggleAllButton"
         onClick={handleToggleAll}
@@ -34,6 +34,8 @@ export const Header: React.FC<Props> = ({
 
       <form onSubmit={handleSubmit}>
         <input
+          ref={inputRef}
+          id=""
           data-cy="NewTodoField"
           type="text"
           className="todoapp__new-todo"
@@ -41,9 +43,6 @@ export const Header: React.FC<Props> = ({
           value={title}
           onChange={event => handleQueryChange(event.target.value)}
           disabled={isDisabled}
-          autoFocus={isFocused}
-          onFocus={() => isFocused}
-          onBlur={() => !isFocused}
         />
       </form>
     </header>

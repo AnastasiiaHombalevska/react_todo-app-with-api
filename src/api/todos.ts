@@ -8,11 +8,11 @@ export const getTodos = () => {
 };
 
 export const addTodos = (data: Omit<Todo, 'id'>) => {
-  return client.post<Todo>(`/todos?userId=${USER_ID}`, data);
+  return client.post<Todo>(`/todos`, data);
 };
 
-export const updateTodos = ({ id, completed }: Todo) => {
-  return client.patch<Todo>(`/todos/${id}`, { completed });
+export const updateTodos = ({ id, title, completed }: Todo) => {
+  return client.patch<Todo>(`/todos/${id}`, { title, completed });
 };
 
 export const deleteTodos = (id: number) => {

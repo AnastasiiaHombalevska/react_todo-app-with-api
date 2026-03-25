@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { UserWarning } from './UserWarning';
 import * as clientService from './api/todos';
 
@@ -18,9 +18,9 @@ export const App: React.FC = () => {
   const [filteredTodos, setFilteredTodos] = useState(todos);
   const [activeFilterBtn, setActiveFilterBtn] = useState('all');
   const [title, setTitle] = useState('');
-  const [isFocused, setIsFocused] = useState(true);
   const [isDisabled, setIsDisabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingTodoId, setLoadingTodoId] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -33,31 +33,43 @@ export const App: React.FC = () => {
       });
   }, []);
 
+  useEffect(() => {
+    if (!isDisabled && !tempTodo) {
+      inputRef.current?.focus();
+    }
+  }, [isDisabled, tempTodo]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
       setErrorMessage('Title should not be empty');
 
       return;
     }
 
     const newTempTodo = {
-      title,
+      title: trimmedTitle,
       id: 0,
       userId: clientService.USER_ID,
       completed: false,
     };
 
     const newTodo: Omit<Todo, 'id'> = {
-      // id: Math.max(0, ...todos.map(todo => todo.id)) + 1,
-      title: title.trim(),
+      title: trimmedTitle,
       userId: clientService.USER_ID,
       completed: false,
     };
 
     setIsDisabled(true);
     setTempTodo(newTempTodo);
+    setLoadingTodoId(newTempTodo?.id);
 
     return clientService
       .addTodos(newTodo)
@@ -69,30 +81,28 @@ export const App: React.FC = () => {
       .catch(() => setErrorMessage('Unable to add a todo'))
       .finally(() => {
         setIsDisabled(false);
-        setIsFocused(true);
         setTempTodo(null);
       });
   };
 
   const handleDeleteTodo = (id: number) => {
     setIsDisabled(true);
-    setIsLoading(true);
+    setLoadingTodoId(id);
 
     return clientService
       .deleteTodos(id)
       .then(() => {
         setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
-        setIsFocused(true);
       })
       .catch(() => setErrorMessage('Unable to delete a todo'))
       .finally(() => {
-        setIsLoading(false);
+        setLoadingTodoId(null);
         setIsDisabled(false);
       });
   };
 
   const changeCompleted = (updatedTodo: Todo) => {
-    setIsLoading(true);
+    setLoadingTodoId(updatedTodo.id);
 
     const toggledTodo = { ...updatedTodo, completed: !updatedTodo.completed };
 
@@ -106,11 +116,11 @@ export const App: React.FC = () => {
         );
       })
       .catch(() => setErrorMessage('Unable to update the todo status'))
-      .finally(() => setIsLoading(false));
+      .finally(() => setLoadingTodoId(null));
   };
 
   const handleChangeTitle = (updatedTodo: Todo) => {
-    setIsLoading(true);
+    setLoadingTodoId(updatedTodo.id);
 
     return clientService
       .updateTodos(updatedTodo)
@@ -124,8 +134,8 @@ export const App: React.FC = () => {
         );
         setErrorMessage('');
       })
-      .catch(() => setErrorMessage('Unable to update the todo'))
-      .finally(() => setIsLoading(false));
+      .catch(() => setErrorMessage('Unable to update a todo'))
+      .finally(() => setLoadingTodoId(null));
   };
 
   const handleToggleAll = () => {
@@ -213,7 +223,7 @@ export const App: React.FC = () => {
         <Header
           todos={todos}
           title={title}
-          isFocused={isFocused}
+          inputRef={inputRef}
           isDisabled={isDisabled}
           handleToggleAll={handleToggleAll}
           handleQueryChange={handleQueryChange}
@@ -222,7 +232,7 @@ export const App: React.FC = () => {
 
         <TodoList
           todos={filteredTodos}
-          isLoading={isLoading}
+          loadingTodoId={loadingTodoId}
           tempTodo={tempTodo}
           handleDeleteTodo={handleDeleteTodo}
           changeCompleted={changeCompleted}
