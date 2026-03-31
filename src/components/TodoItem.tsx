@@ -20,6 +20,7 @@ export const TodoItem: React.FC<Props> = ({
   handleChangeTitle,
 }) => {
   const { userId, id, title, completed } = todo;
+  const isActive = loadingTodoIds.includes(todo.id) || loadingTodoId === todo.id;
 
   const [isDblClicked, setIsDblClicked] = useState(false);
   const [query, setQuery] = useState(title);
@@ -115,7 +116,7 @@ export const TodoItem: React.FC<Props> = ({
         <div
           data-cy="TodoLoader"
           className={classNames('modal overlay', {
-            'is-active': loadingTodoIds.includes(todo.id),
+            'is-active': isActive,
           })}
         >
           <div className="modal-background has-background-white-ter" />
