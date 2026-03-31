@@ -5,6 +5,7 @@ import { Todo } from '../types/Todo';
 type Props = {
   todo: Todo;
   loadingTodoId: number | null;
+  loadingTodoIds: number[];
   handleDeleteTodo: (id: number) => void;
   changeCompleted: (todo: Todo) => void;
   handleChangeTitle: (todo: Todo) => void;
@@ -13,6 +14,7 @@ type Props = {
 export const TodoItem: React.FC<Props> = ({
   todo,
   loadingTodoId,
+  loadingTodoIds,
   handleDeleteTodo,
   changeCompleted,
   handleChangeTitle,
@@ -77,7 +79,7 @@ export const TodoItem: React.FC<Props> = ({
               className="todo__title"
               onDoubleClick={() => setIsDblClicked(true)}
             >
-              {loadingTodoId === id ? 'Todo is being saved now' : title}
+              {loadingTodoId === id ? '' : title}
             </span>
 
             <button
@@ -113,7 +115,7 @@ export const TodoItem: React.FC<Props> = ({
         <div
           data-cy="TodoLoader"
           className={classNames('modal overlay', {
-            'is-active': loadingTodoId === id,
+            'is-active': loadingTodoIds.includes(todo.id),
           })}
         >
           <div className="modal-background has-background-white-ter" />

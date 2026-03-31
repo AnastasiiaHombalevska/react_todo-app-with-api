@@ -20,6 +20,7 @@ export const App: React.FC = () => {
   const [title, setTitle] = useState('');
   const [isDisabled, setIsDisabled] = useState(false);
   const [loadingTodoId, setLoadingTodoId] = useState<number | null>(null);
+  const [loadingTodoIds, setLoadingTodoIds] = useState<number[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [errorMessage, setErrorMessage] = useState('');
@@ -155,16 +156,22 @@ export const App: React.FC = () => {
     return clientService
       .getTodos()
       .then(allTodos => {
-        const deletePromises = allTodos
-          .filter(todo => todo.completed)
-          .map(todo => clientService.deleteTodos(todo.id));
+        const completedTodos = allTodos.filter(todo => todo.completed);
+
+        setLoadingTodoIds(completedTodos.map(todo => todo.id));
+
+        const deletePromises = completedTodos.map(todo =>
+          clientService.deleteTodos(todo.id),
+        );
 
         return Promise.all(deletePromises).then(() => {
           setTodos(allTodos.filter(todo => !todo.completed));
+          setLoadingTodoIds([]);
         });
       })
       .catch(() => {
         setErrorMessage('Cannot delete all completed todos');
+        setLoadingTodoIds([]);
       });
   };
 
@@ -233,6 +240,7 @@ export const App: React.FC = () => {
         <TodoList
           todos={filteredTodos}
           loadingTodoId={loadingTodoId}
+          loadingTodoIds={loadingTodoIds}
           tempTodo={tempTodo}
           handleDeleteTodo={handleDeleteTodo}
           changeCompleted={changeCompleted}
