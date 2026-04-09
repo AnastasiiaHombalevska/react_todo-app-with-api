@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Todo } from '../types/Todo';
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
   loadingTodoIds: number[];
   handleDeleteTodo: (id: number) => void;
   changeCompleted: (todo: Todo) => void;
-  handleChangeTitle: (todo: Todo) => void;
+  handleChangeTitle: (todo: Todo) => Promise<boolean>;
 };
 
 export const TodoItem: React.FC<Props> = ({
@@ -20,10 +20,19 @@ export const TodoItem: React.FC<Props> = ({
   handleChangeTitle,
 }) => {
   const { userId, id, title, completed } = todo;
-  const isActive = loadingTodoIds.includes(todo.id) || loadingTodoId === todo.id;
+  const isActive =
+    loadingTodoIds.includes(todo.id) || loadingTodoId === todo.id;
 
   const [isDblClicked, setIsDblClicked] = useState(false);
   const [query, setQuery] = useState(title);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isDblClicked && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isDblClicked]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -32,18 +41,21 @@ export const TodoItem: React.FC<Props> = ({
 
     if (trimmedQuery === title) {
       setIsDblClicked(false);
-
       return;
     }
 
     if (!trimmedQuery) {
       handleDeleteTodo(id);
-
       return;
     }
 
-    handleChangeTitle({ userId, id, title: trimmedQuery, completed });
-    setIsDblClicked(false);
+    handleChangeTitle({ userId, id, title: trimmedQuery, completed }).then(
+      success => {
+        if (success) {
+          setIsDblClicked(false);
+        }
+      },
+    );
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -77,10 +89,10 @@ export const TodoItem: React.FC<Props> = ({
           <>
             <span
               data-cy="TodoTitle"
-              className="todo__title"
+              className={classNames('todo__title', { completed })}
               onDoubleClick={() => setIsDblClicked(true)}
             >
-              {loadingTodoId === id ? '' : title}
+              {title}
             </span>
 
             <button
@@ -93,20 +105,14 @@ export const TodoItem: React.FC<Props> = ({
             </button>
           </>
         ) : (
-          <form
-            onSubmit={event => {
-              event.preventDefault();
-              handleSubmit(event);
-            }}
-            className="todo__edit-form"
-          >
+          <form className="todo__edit-form" onSubmit={handleSubmit}>
             <input
+              ref={inputRef}
               data-cy="TodoTitleField"
               type="text"
               className="todo__title-field"
               value={query}
-              placeholder="Empty todo will be deleted"
-              onChange={event => setQuery(event.target.value)}
+              onChange={e => setQuery(e.target.value)}
               onBlur={handleSubmit}
               onKeyDown={handleKeyDown}
             />

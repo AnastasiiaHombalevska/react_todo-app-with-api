@@ -26,6 +26,8 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    inputRef.current?.focus();
+
     clientService
       .getTodos()
       .then(setTodos)
@@ -39,10 +41,6 @@ export const App: React.FC = () => {
       inputRef.current?.focus();
     }
   }, [isDisabled, tempTodo]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -116,11 +114,11 @@ export const App: React.FC = () => {
           ),
         );
       })
-      .catch(() => setErrorMessage('Unable to update the todo status'))
+      .catch(() => setErrorMessage('Unable to update a todo'))
       .finally(() => setLoadingTodoId(null));
   };
 
-  const handleChangeTitle = (updatedTodo: Todo) => {
+  const handleChangeTitle = (updatedTodo: Todo): Promise<boolean> => {
     setLoadingTodoId(updatedTodo.id);
 
     return clientService
@@ -134,45 +132,75 @@ export const App: React.FC = () => {
           ),
         );
         setErrorMessage('');
+        return true;
       })
-      .catch(() => setErrorMessage('Unable to update a todo'))
+      .catch(() => {
+        setErrorMessage('Unable to update a todo');
+        return false;
+      })
       .finally(() => setLoadingTodoId(null));
   };
 
-  const handleToggleAll = () => {
-    return clientService.updateTodos(todos[0]).then(() => {
-      setTodos(prevTodos => {
-        const allCompleted = prevTodos.every(todo => todo.completed);
 
-        return prevTodos.map(todo => ({
-          ...todo,
-          completed: !allCompleted,
-        }));
-      });
+  const handleToggleAll = () => {
+    const allCompleted = todos.every(todo => todo.completed);
+
+    const todosToUpdate = allCompleted
+      ? todos
+      : todos.filter(todo => !todo.completed);
+
+    const requests = todosToUpdate.map(todo => {
+      const updatedTodo = { ...todo, completed: !allCompleted };
+      return clientService.updateTodos(updatedTodo)
+        .then(() => updatedTodo)
+        .catch(() => {
+          setErrorMessage(`Unable to update todo "${todo.title}"`);
+          return null;
+        });
+    });
+
+    return Promise.all(requests).then(results => {
+      const successfulTodos = results.filter(Boolean) as Todo[];
+      if (successfulTodos.length > 0) {
+        setTodos(prevTodos =>
+          prevTodos.map(todo =>
+            successfulTodos.find(t => t.id === todo.id) || todo
+          )
+        );
+      }
     });
   };
 
   const clearCompletedTodos = () => {
-    return clientService
-      .getTodos()
-      .then(allTodos => {
-        const completedTodos = allTodos.filter(todo => todo.completed);
+    const completedTodos = todos.filter(todo => todo.completed);
 
-        setLoadingTodoIds(completedTodos.map(todo => todo.id));
+    setLoadingTodoIds(completedTodos.map(todo => todo.id));
 
-        const deletePromises = completedTodos.map(todo =>
-          clientService.deleteTodos(todo.id),
-        );
+    const deletePromises = completedTodos.map(todo =>
+      clientService.deleteTodos(todo.id),
+    );
 
-        return Promise.all(deletePromises).then(() => {
-          setTodos(allTodos.filter(todo => !todo.completed));
-          setLoadingTodoIds([]);
-        });
-      })
-      .catch(() => {
-        setErrorMessage('Cannot delete all completed todos');
-        setLoadingTodoIds([]);
+    return Promise.allSettled(deletePromises).then(results => {
+      const successfulIds = completedTodos
+        .filter((_, index) => results[index].status === 'fulfilled')
+        .map(todo => todo.id);
+
+      const hasFailed = results.some(result => result.status === 'rejected');
+
+      setTodos(prevTodos =>
+        prevTodos.filter(todo => !successfulIds.includes(todo.id)),
+      );
+
+      if (hasFailed) {
+        setErrorMessage('Unable to delete a todo');
+      }
+
+      setLoadingTodoIds([]);
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
       });
+    });
   };
 
   const handleQueryChange = (value: string) => {
