@@ -41,11 +41,13 @@ export const TodoItem: React.FC<Props> = ({
 
     if (trimmedQuery === title) {
       setIsDblClicked(false);
+
       return;
     }
 
     if (!trimmedQuery) {
       handleDeleteTodo(id);
+
       return;
     }
 

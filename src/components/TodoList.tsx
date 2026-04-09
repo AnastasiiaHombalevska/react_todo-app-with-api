@@ -10,7 +10,7 @@ type Props = {
   tempTodo: Todo | null;
   handleDeleteTodo: (id: number) => void;
   changeCompleted: (todo: Todo) => void;
-  handleChangeTitle: (todo: Todo) => void;
+  handleChangeTitle: (todo: Todo) => Promise<boolean>;
 };
 
 export const TodoList: React.FC<Props> = ({
