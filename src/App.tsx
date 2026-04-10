@@ -132,15 +132,16 @@ export const App: React.FC = () => {
           ),
         );
         setErrorMessage('');
+
         return true;
       })
       .catch(() => {
         setErrorMessage('Unable to update a todo');
+
         return false;
       })
       .finally(() => setLoadingTodoId(null));
   };
-
 
   const handleToggleAll = () => {
     const allCompleted = todos.every(todo => todo.completed);
@@ -149,9 +150,13 @@ export const App: React.FC = () => {
       ? todos
       : todos.filter(todo => !todo.completed);
 
+    setLoadingTodoIds(todosToUpdate.map(todo => todo.id));
+
     const requests = todosToUpdate.map(todo => {
       const updatedTodo = { ...todo, completed: !allCompleted };
-      return clientService.updateTodos(updatedTodo)
+
+      return clientService
+        .updateTodos(updatedTodo)
         .then(() => updatedTodo)
         .catch(() => {
           setErrorMessage(`Unable to update todo "${todo.title}"`);
@@ -161,15 +166,19 @@ export const App: React.FC = () => {
 
     return Promise.all(requests).then(results => {
       const successfulTodos = results.filter(Boolean) as Todo[];
+
       if (successfulTodos.length > 0) {
         setTodos(prevTodos =>
-          prevTodos.map(todo =>
-            successfulTodos.find(t => t.id === todo.id) || todo
-          )
+          prevTodos.map(
+            todo => successfulTodos.find(t => t.id === todo.id) || todo,
+          ),
         );
       }
+
+      setLoadingTodoIds([]);
     });
   };
+
 
   const clearCompletedTodos = () => {
     const completedTodos = todos.filter(todo => todo.completed);
